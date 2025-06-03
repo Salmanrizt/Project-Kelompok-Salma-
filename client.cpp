@@ -1,5 +1,3 @@
-Coding Client.cpp 
-
 #include "client.hpp"
 #include <iostream>
 #include <sys/socket.h>
@@ -52,7 +50,6 @@ int main() {
 
     return 0;
 }
-
 
 
 
