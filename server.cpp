@@ -10,6 +10,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include "server.hpp"
 
 #define PORT 8080              
 #define BUFFER_SIZE 1024       
