@@ -42,7 +42,7 @@ Pastikan Anda memiliki compiler C++ dan sistem operasi yang mendukung socket pro
 2. Kompilasi
 Kompilasi server dan client menggunakan perintah berikut:
 ```
-./makemake client
+./make client
 ```
 
 3. Menjalankan Server
