@@ -11,16 +11,14 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
-#define PORT 8080
-#define BUFFER_SIZE 1024
+#define PORT 8080              
+#define BUFFER_SIZE 1024       
 
-// Fungsi cek apakah ID ada di studentdatabase.csv
+// Fungsi untuk cek ID mahasiswa di studentdatabase.csv
 bool checkStudentInDatabase(const std::string& id) {
     std::ifstream file("studentdatabase.csv");
-    if (!file.is_open()) {
-        std::cerr << "Failed to open studentdatabase.csv\n";
-        return false;
-    }
+    if (!file.is_open()) return false;
+
     std::string line;
     while (std::getline(file, line)) {
         std::istringstream ss(line);
@@ -28,43 +26,38 @@ bool checkStudentInDatabase(const std::string& id) {
         if (std::getline(ss, studentId, ',')) {
             if (studentId == id) {
                 file.close();
-                return true;
+                return true; 
             }
         }
     }
     file.close();
-    return false;
+    return false; 
 }
-// Fungsi untuk timestamp dalam format YYYY-MM-DD HH:MM:SS
+
+// Fungsi untuk mendapatkan waktu saat ini (WIB/GMT+7) dalam format YYYY-MM-DD HH:MM:SS
 std::string getCurrentTimestamp() {
     using namespace std::chrono;
-    auto now = system_clock::now();
+    auto now = system_clock::now() + hours(7); // Tambahkan 7 jam untuk zona waktu WIB
     std::time_t now_time = system_clock::to_time_t(now);
     std::tm* ptm = std::localtime(&now_time);
-
     char buffer[20];
     std::strftime(buffer, 20, "%Y-%m-%d %H:%M:%S", ptm);
     return std::string(buffer);
 }
 
-// Update attendance.csv dengan ID dan timestamp, lalu sorting berdasarkan timestamp ascending
+// Fungsi untuk mencatat kehadiran ID ke attendance.csv dan mengurutkannya berdasarkan timestamp (ascending)
 void updateAttendance(const std::string& id) {
-    // Tambah record baru
+
+    // Tambahkan data kehadiran baru ke file attendance.csv
     std::ofstream outfile("attendance.csv", std::ios::app);
-    if (!outfile.is_open()) {
-        std::cerr << "Failed to open attendance.csv\n";
-        return;
-    }
+    if (!outfile.is_open()) return;
     std::string timestamp = getCurrentTimestamp();
     outfile << id << "," << timestamp << "\n";
     outfile.close();
 
-    // Baca ulang seluruh attendance
+    // Baca ulang seluruh isi attendance.csv ke dalam vector
     std::ifstream infile("attendance.csv");
-    if (!infile.is_open()) {
-        std::cerr << "Failed to open attendance.csv\n";
-        return;
-    }
+    if (!infile.is_open()) return;
     std::vector<std::pair<std::string, std::string>> records;
     std::string line;
     while (std::getline(infile, line)) {
@@ -76,17 +69,14 @@ void updateAttendance(const std::string& id) {
     }
     infile.close();
 
-    // Sort timestamp ascending
+    // Urutkan berdasarkan timestamp (string time)
     std::sort(records.begin(), records.end(), [](const auto& a, const auto& b) {
         return a.second < b.second;
     });
 
-    // Tambah ke attendance.csv
+    // Tulis ulang file attendance.csv yang telah diurutkan
     std::ofstream outfile2("attendance.csv");
-    if (!outfile2.is_open()) {
-        std::cerr << "Failed to open attendance.csv for writing\n";
-        return;
-    }
+    if (!outfile2.is_open()) return;
     for (const auto& rec : records) {
         outfile2 << rec.first << "," << rec.second << "\n";
     }
@@ -100,47 +90,43 @@ int main() {
     int addrlen = sizeof(address);
     char buffer[BUFFER_SIZE] = {0};
 
-    // buat socket
-    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
-        perror("Socket creation failed");
+    // Membuat socket TCP
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
         exit(EXIT_FAILURE);
-    }
 
-    // set reuse address
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
-        perror("setsockopt");
+    // Mengatur opsi agar port dapat digunakan kembali
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)))
         exit(EXIT_FAILURE);
-    }
 
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(PORT);
+    // Menentukan properti address server
+    address.sin_family = AF_INET;              
+    address.sin_addr.s_addr = INADDR_ANY;      
+    address.sin_port = htons(PORT);          
 
-    // bind socket ke port
-    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
-        perror("bind failed");
+    // Bind socket ke alamat dan port yang telah ditentukan
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0)
         exit(EXIT_FAILURE);
-    }
 
-    // listen koneksi masuk
-    if (listen(server_fd, 3) < 0) {
-        perror("listen failed");
+    // Mulai mendengarkan koneksi masuk
+    if (listen(server_fd, 3) < 0)
         exit(EXIT_FAILURE);
-    }
 
     std::cout << "Server running on port " << PORT << std::endl;
 
+    // Loop utama server
     while (true) {
-        if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0) {
-            perror("accept");
-            exit(EXIT_FAILURE);
-        }
 
+        // Terima koneksi dari client
+        if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0)
+            exit(EXIT_FAILURE);
+
+        // Kosongkan buffer dan baca data dari client
         memset(buffer, 0, BUFFER_SIZE);
         ssize_t valread = read(new_socket, buffer, BUFFER_SIZE);
         if (valread > 0) {
             std::string id(buffer);
 
+            // Cek apakah ID valid dan catat kehadiran
             if (checkStudentInDatabase(id)) {
                 updateAttendance(id);
                 std::string msg = "Attendance recorded for ID: " + id + "\n";
@@ -150,6 +136,8 @@ int main() {
                 send(new_socket, msg.c_str(), msg.size(), 0);
             }
         }
+
+
         close(new_socket);
     }
 
