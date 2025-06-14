@@ -3,8 +3,11 @@
 
 #include <string>
 
-bool checkStudentInDatabase(const std::string& id);
-void updateAttendance(const std::string& id);
+std::string getStudentNameById(const std::string& id);
 std::string getCurrentTimestamp();
+void updateAttendance(const std::string& id, const std::string& name);
+void runServer();
+void showStudentDatabase();
+void showAttendance();
 
 #endif
